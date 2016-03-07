@@ -1,6 +1,6 @@
 package org.cyberthinkers.problemsolvers.cassowary
 
-abstract class AbstractVariable extends Ordered[AbstractMutableVariable] with Equals {
+abstract class AbstractVariable extends Ordered[AbstractVariable] with Equals {
   val id: Int
   
   final def isDummy = this match { case _: DummyVariable => true; case _ => false }
@@ -8,11 +8,11 @@ abstract class AbstractVariable extends Ordered[AbstractMutableVariable] with Eq
   final def isPivotable = this match { case _: SlackVariable => true; case _ => false }
   final def isRestricted = this match { case _: SlackVariable => true; case _: DummyVariable => true; case _ => false }
   
-  override def compare(v: AbstractMutableVariable) = id.compareTo(v.id)
-  override def canEqual(v: Any) = v.isInstanceOf[AbstractMutableVariable]
+  override def compare(v: AbstractVariable) = id.compareTo(v.id)
+  override def canEqual(v: Any) = v.isInstanceOf[AbstractVariable]
   override def equals(v: Any) = v match {
-    case that: AbstractMutableVariable => this.id == that.id
-    case _                             => false
+    case that: AbstractVariable => this.id == that.id
+    case _                      => false
   }
   override def hashCode = id.hashCode()
 }
