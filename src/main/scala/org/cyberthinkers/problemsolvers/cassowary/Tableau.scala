@@ -3,68 +3,86 @@ package org.cyberthinkers.problemsolvers.cassowary
 class Tableau(
     val columns: Map[AbstractVariable, Set[AbstractVariable]] = Map.empty,
     val rows: Map[AbstractVariable, LinearExpression] = Map.empty,
-    val infeasibleRows: Set[AbstractVariable] = Set.empty, 
+    val infeasibleRows: Set[AbstractVariable] = Set.empty,
     val externalRows: Set[AbstractVariable] = Set.empty,
     val externalParametricVars: Set[AbstractVariable] = Set.empty) {
 
-  protected def noteRemovedVariable(variable: AbstractVariable , subject: AbstractVariable) = {
-    val revisedColumns = columns -- columns.get(variable).get
+  protected def noteRemovedVariable(variable: AbstractVariable, subject: Option[AbstractVariable]): Tableau = {
+    val revisedColumns = if (subject.isDefined) columns -- subject else columns
     new Tableau(revisedColumns, rows, infeasibleRows, externalRows, externalParametricVars)
   }
-  
-  protected def noteAddedVariable(variable: AbstractVariable , subject: AbstractVariable) = {
-    val rowset = variable -> (columns.getOrElse(variable, Set.empty) + subject)
-    val revisedColumns = columns + rowset
+
+  protected def noteAddedVariable(variable: AbstractVariable, subject: Option[AbstractVariable]): Tableau = {
+    val revisedColumns =
+      if (!subject.isDefined) columns
+      else columns + (variable -> (columns.getOrElse(variable, Set.empty) + subject.get))
     new Tableau(revisedColumns, rows, infeasibleRows, externalRows, externalParametricVars)
   }
- 
+
+  private def insertColumns(terms: Set[AbstractVariable], rowVariable: AbstractVariable) = {
+    val revisedColumns = scala.collection.mutable.HashMap.empty[AbstractVariable, Set[AbstractVariable]]
+    val externalTerms = scala.collection.mutable.HashSet.empty[AbstractVariable]
+    terms foreach {
+      term =>
+        revisedColumns += (term -> (columns.getOrElse(term, Set.empty) + rowVariable))
+        if (term.isExternal) externalTerms += term
+    }
+    (columns ++ revisedColumns, externalParametricVars ++ externalTerms)
+  }
+
   protected def addRow(variable: AbstractVariable, expr: LinearExpression): Tableau = {
-    val revisedColumns = insertColumns(expr.terms.keySet, variable)
     val revisedRows = rows + (variable -> expr)
+    val (revisedColumns, revisedExternalParametricVars) = insertColumns(expr.terms.keySet, variable)
     val revisedExternalRows = if (variable.isExternal) externalRows + variable else externalRows
-    val revisedExternalParametricVars = externalParametricVars ++ expr.terms.keys.filter(_.isExternal)
     new Tableau(revisedColumns, revisedRows, infeasibleRows, revisedExternalRows, revisedExternalParametricVars)
   }
-  
-  protected def removeColumn(variable: AbstractVariable) = {
-    val rowsRemoved = columns.get(variable)
+
+  protected def removeColumn(variable: AbstractVariable): Tableau = {
     val revisedColumns = columns - variable
-    //FIXME -- still working on this
-  }
-  
-  private def insertColumns(terms: Set[AbstractVariable], rowVariable: AbstractVariable) = {
-    val v1 = for {
-      term <- terms
-      rowset = term -> (columns.getOrElse(term, Set.empty) + rowVariable)
-    } yield rowset
-    columns ++ v1.toMap //FIXME- rework to get rid of toMap, which is an extra step
+    val (revisedExternalRows, revisedExternalParametricVars) =
+      if (variable.isExternal) (externalRows - variable, externalParametricVars - variable)
+      else (externalRows, externalParametricVars)
+    new Tableau(revisedColumns, rows, infeasibleRows, revisedExternalRows, revisedExternalParametricVars)
   }
 
   protected def removeRow(variable: AbstractVariable): Tableau = {
-    val expr = rows.get(variable)
-    val revisedColumns = for {
-      (k, v) <- expr.get.terms
-      varset = columns.get(k)
-      if(!varset.isDefined)
-      revisedVarset = varset.get - variable
-    } yield (k -> revisedVarset)
-    val revisedInfeasibleRows = this.infeasibleRows - variable
-    val revisedExternalRows = if(variable.isExternal) externalRows - variable else externalRows
+    val revisedInfeasibleRows = infeasibleRows - variable
+    val revisedExternalRows = if (variable.isExternal) externalRows - variable else externalRows
     val revisedRows = rows - variable
-    new Tableau(revisedColumns, revisedRows, infeasibleRows, revisedExternalRows, externalParametricVars)
+    new Tableau(columns, revisedRows, revisedInfeasibleRows, revisedExternalRows, externalParametricVars)
+  }
+
+  private def substitueOut(expr1: LinearExpression, variable: AbstractVariable, expr2: LinearExpression, subject: AbstractVariable) = {
+    val multiplier = expr1.terms(variable)
+    val revisedTerms = expr1.terms - variable
+    val revisedConstant = multiplier * expr2.constant
+    case class Removed(variable: AbstractVariable, expr: LinearExpression)
+    expr2.terms.keys foreach { clv =>
+      val coeff = expr2.terms(clv)
+      val dOldCoeff = expr1.terms.get(clv)
+      if(dOldCoeff.isDefined) {
+        val oldCoeff = dOldCoeff.get
+        val newCoeff = oldCoeff + multiplier * coeff
+        
+      } else {
+        
+      }
+    }
   }
   
-  protected def substitueOut(oldVar: AbstractVariable, expr: LinearExpression) {
-//    class RichMap[A, B](m: Map[A, B]) {
-//      def thatIntersectWith(ks: Set[A]) = ks.flatMap(k => m.get(k).map((k, _))).toMap
-//      def thatIntersectWith(ks: A*) = ks.flatMap(k => m.get(k).map((k, _))).toMap
-////    interestingKeys.flatMap(k => originalMap.get(k).map((k, _))).toMap
-//    }
-//    implicit def enrichMap[A, B](m: Map[A, B]) = new RichMap(m)
-    val varset = columns.get(oldVar).get
-    val c = varset collect this.columns
- 
-   // >>> more stuff goes here
-    // mod infeasible rows from v
+  protected def substitueOut(oldVar: AbstractVariable, expr: LinearExpression): Tableau = {
+    val infeasibleRowsTmp = scala.collection.mutable.HashSet.empty[AbstractVariable]
+    val terms = columns(oldVar)
+    terms foreach { term =>
+      val r = rows(term)
+      // substitueOut...
+      if (term.isRestricted && r.constant < 0) {
+        infeasibleRowsTmp += term
+      }
+    }
+    val revisedInfeasibleRows = infeasibleRows ++ infeasibleRowsTmp
+    val (revisedExternalRows, revisedExternalParametricVars) =
+      if (oldVar.isExternal) (externalRows + oldVar, externalParametricVars - oldVar) else (externalRows, externalParametricVars)
+    new Tableau(columns, rows, revisedInfeasibleRows, revisedExternalRows, externalParametricVars)
   }
 }

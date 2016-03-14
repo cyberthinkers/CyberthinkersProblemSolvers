@@ -5,8 +5,8 @@ import scala.collection.immutable.HashMap
 // add implicit conversion somewhere, from Variable to LinearExpression
 
 object LinearExpression {
-  @inline def approxEqual(a: Double, b: Double): Boolean = Math.abs(a - b) < AbstractMutableVariable.epsilon
-  @inline def isApproxZero(a: Double) = Math.abs(a) < AbstractMutableVariable.epsilon
+  @inline def approxEqual(a: Double, b: Double) = Math.abs(a - b) < AbstractVariable.epsilon
+  @inline def isApproxZero(a: Double) = Math.abs(a) < AbstractVariable.epsilon
 }
 
 case class LinearExpression(val terms: Map[AbstractVariable, Double], val constant: Double) {
@@ -38,8 +38,13 @@ case class LinearExpression(val terms: Map[AbstractVariable, Double], val consta
   def +(expression: LinearExpression) = addExpression(expression)
 
   def -(expression: LinearExpression) = addExpression(expression, -1)
+  
+  def --(variable: AbstractVariable): LinearExpression = {
+    val newTerms = terms - variable;
+    LinearExpression(newTerms, constant);
+  }
 
-  //FIXME- Missing addExpression with Tableau solver - rework addExpression or Tableau
+  //FIXME- Missing addExpression with Tableau solver - rework addExpression in Tableau
   
   def addExpression(expression: LinearExpression, n: Double = 1) = {
     val v1 =
@@ -57,18 +62,11 @@ case class LinearExpression(val terms: Map[AbstractVariable, Double], val consta
 
   def anyPivotableVariable = terms.find(p => p._1 isPivotable)
   
-  // missing substituteOut
-  
   def changeSubject(oldSubject: AbstractVariable,  newSubject: AbstractVariable) = {
-    val (revisedLinearExpression, reciprocal) = setNewSubject(newSubject)
-    LinearExpression(revisedLinearExpression.terms + (oldSubject -> reciprocal), revisedLinearExpression.constant)
-  }
-    
-  def setNewSubject(subject: AbstractVariable) = {
-    val coeff = terms.get(subject).get
-    val revisedExpr = LinearExpression(terms - subject, constant)
+    val coeff = terms(newSubject)
+    val revisedExpr = LinearExpression(terms - newSubject, constant)
     val reciprocal = 1.0 / coeff
     val revisedLinearExpression = revisedExpr * -reciprocal
-    (revisedLinearExpression, reciprocal)
+    LinearExpression(revisedLinearExpression.terms + (oldSubject -> reciprocal), revisedLinearExpression.constant)
   }
 }
