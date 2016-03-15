@@ -7,15 +7,15 @@ class Tableau(
     val externalRows: Set[AbstractVariable] = Set.empty,
     val externalParametricVars: Set[AbstractVariable] = Set.empty) {
 
-  protected def noteRemovedVariable(variable: AbstractVariable, subject: Option[AbstractVariable]): Tableau = {
-    val revisedColumns = if (subject.isDefined) columns -- subject else columns
+  // check should be made before calling this that the subject is in the tableau
+  protected def noteRemovedVariable(variable: AbstractVariable, subject:AbstractVariable): Tableau = {
+    val r = columns(variable) - subject
+    val revisedColumns = columns + (variable -> r)
     new Tableau(revisedColumns, rows, infeasibleRows, externalRows, externalParametricVars)
   }
 
-  protected def noteAddedVariable(variable: AbstractVariable, subject: Option[AbstractVariable]): Tableau = {
-    val revisedColumns =
-      if (!subject.isDefined) columns
-      else columns + (variable -> (columns.getOrElse(variable, Set.empty) + subject.get))
+  protected def noteAddedVariable(variable: AbstractVariable, subject: AbstractVariable): Tableau = {
+    val revisedColumns = columns + (variable -> (columns.getOrElse(variable, Set.empty) + subject))
     new Tableau(revisedColumns, rows, infeasibleRows, externalRows, externalParametricVars)
   }
 
@@ -51,12 +51,16 @@ class Tableau(
     val revisedRows = rows - variable
     new Tableau(columns, revisedRows, revisedInfeasibleRows, revisedExternalRows, externalParametricVars)
   }
-
-  private def substitueOut(expr1: LinearExpression, variable: AbstractVariable, expr2: LinearExpression, subject: AbstractVariable) = {
+  
+  private case class Removed(variable: AbstractVariable, expr: LinearExpression)
+  
+  private def substituteOut(
+      expr1: LinearExpression, variable: AbstractVariable,
+      expr2: LinearExpression, subject: AbstractVariable) = {
     val multiplier = expr1.terms(variable)
     val revisedTerms = expr1.terms - variable
     val revisedConstant = multiplier * expr2.constant
-    case class Removed(variable: AbstractVariable, expr: LinearExpression)
+    
     expr2.terms.keys foreach { clv =>
       val coeff = expr2.terms(clv)
       val dOldCoeff = expr1.terms.get(clv)
