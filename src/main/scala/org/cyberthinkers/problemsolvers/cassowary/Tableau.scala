@@ -80,7 +80,7 @@ class Tableau(
     terms foreach { term =>
       val r = rows(term)
       // substitueOut...
-      if (term.isRestricted && r.constant < 0) {
+      if (term.isRestricted && r.constant < 0.0) {
         infeasibleRowsTmp += term
       }
     }
