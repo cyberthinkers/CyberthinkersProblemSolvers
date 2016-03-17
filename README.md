@@ -6,8 +6,11 @@
 
 ### Helpful Scala Resources
 *[Cheatsheet] (http://docs.scala-lang.org/cheatsheets/)
+
 *[One Huge Scala Reference Card] (http://mbonaci.github.io/scala/)
+
 *[The Neophyte's Guide to Scala] (http://danielwestheide.com/scala/neophytes.html)
+
 *[Scala Partial Functions (Without a PhD)] (http://blog.bruchez.name/2011/10/scala-partial-functions-without-phd.html)
 
 
