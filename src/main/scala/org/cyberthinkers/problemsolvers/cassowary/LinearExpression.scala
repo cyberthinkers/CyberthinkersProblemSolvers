@@ -16,7 +16,7 @@ case class LinearExpression(val terms: Map[AbstractVariable, Double], val consta
 
   def this() = this(0);
 
-  def this(v: AbstractVariable, value: Double = 1) = this(HashMap(v -> value), 0)
+  def this(v: AbstractVariable, value: Double = 1) = this(Map(v -> value), 0)
 
   def isConstant: Boolean = terms.size == 0
 
