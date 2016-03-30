@@ -27,11 +27,11 @@ case class LinearExpression(val terms: Map[AbstractVariable, Double], val consta
     else require(!(this isConstant), "Can't allow nonlinear expressions"); expression * this.constant
   }
 
-  def +(variable: Variable) = addExpression(new LinearExpression(variable))
+  def +(variable: Variable): LinearExpression = addExpression(new LinearExpression(variable))
 
-  def -(variable: Variable) = addExpression(new LinearExpression(variable), -1)
+  def -(variable: Variable): LinearExpression = addExpression(new LinearExpression(variable), -1)
   
-  def /(d: Double) = this * (1.0 / d) //FIXME removed / 0 test, but probably should be restated as a partial function
+  def /(d: Double): LinearExpression = this * (1.0 / d) //FIXME removed / 0 test
   
   // missing / LinearExpression - Is it really needed here?
   
@@ -46,7 +46,7 @@ case class LinearExpression(val terms: Map[AbstractVariable, Double], val consta
 
   //FIXME- Missing addExpression with Tableau solver - rework addExpression in Tableau
   
-  def addExpression(expression: LinearExpression, n: Double = 1) = {
+  def addExpression(expression: LinearExpression, n: Double = 1): LinearExpression = {
     val v1 =
       for {
         (v, coeff) <- expression.terms
