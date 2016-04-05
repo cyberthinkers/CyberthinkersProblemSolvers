@@ -1,18 +1,19 @@
 package org.cyberthinkers.problemsolvers.cassowary
 
-import scala.collection.mutable.{HashMap => MutableHashMap}
+import scala.collection.mutable
 
-abstract class SimplexSolver {
-    var tableau: Tableau
-    var stayMinusErrorVars: Vector[SlackVariable]
-    var stayPlusErrorVars: Vector[SlackVariable]
-    var errorVars: MutableHashMap[Constraint, Set[Any]]
-    var markerVars: MutableHashMap[Constraint, Set[Variable]]
-    var resolvePair: Vector[Double]
-    var objective: ObjectiveVariable
-    var editVarMap: MutableHashMap[Variable, EditInfo]
-    var needsSolving: Boolean
-    var optimizeAutomatically: Boolean
+class SimplexSolver(
+    val tableau: Tableau,
+    val stayMinusErrorVars: mutable.ArrayBuffer[SlackVariable],
+    val stayPlusErrorVars: mutable.Buffer[SlackVariable],
+    val errorVars: mutable.HashMap[Constraint, mutable.Set[Any]],
+    val markerVars: mutable.HashMap[Constraint, mutable.Set[Variable]],
+    val resolvePair: mutable.Buffer[Double],
+    val editVarMap: mutable.HashMap[Variable, EditInfo],
+    var needsSolving: Boolean,
+    var objective: ObjectiveVariable,
+    var optimizeAutomatically: Boolean) {
+  
 
   
 }

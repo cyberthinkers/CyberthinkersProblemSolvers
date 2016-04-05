@@ -53,7 +53,7 @@ class Tableau(
     rows.remove(variable)
   }
 
-  private def substituteOut(
+  private[this] def substituteOut(
     expr1: LinearExpression, variable: AbstractVariable,
     expr2: LinearExpression, subject: AbstractVariable): LinearExpression = {
     val multiplier = expr1.terms(variable)
