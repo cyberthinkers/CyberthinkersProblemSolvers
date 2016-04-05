@@ -18,7 +18,7 @@ class Tableau(
     columns += (variable -> (columns.getOrElse(variable, mutable.Set.empty) + subject))
   }
 
-  private def insertColumns(terms: scala.collection.Set[AbstractVariable] , rowVariable: AbstractVariable): Unit = {
+  private def insertColumns(terms: scala.collection.Set[AbstractVariable], rowVariable: AbstractVariable): Unit = {
     terms foreach {
       term =>
         columns += (term -> (columns.getOrElse(term, mutable.Set.empty) + rowVariable))
@@ -42,10 +42,9 @@ class Tableau(
 
   protected def removeRow(variable: AbstractVariable): Unit = {
     val expr = rows(variable)
-    expr.terms.keys foreach {
-      v =>
-        val varset = columns.get(v)
-        if (varset.isDefined) varset.get.remove(v)
+    expr.terms.keys foreach { v =>
+      val varset = columns.get(v)
+      if (varset.isDefined) varset.get.remove(v)
     }
     if (variable.isExternal) externalRows -= variable
     rows.remove(variable)
@@ -56,8 +55,7 @@ class Tableau(
 
   private def substituteOut(
     expr1: LinearExpression, variable: AbstractVariable,
-    expr2: LinearExpression, subject: AbstractVariable) = {
-    def isApproxZero(value: Double): Boolean = Math.abs(value) < AbstractVariable.epsilon
+    expr2: LinearExpression, subject: AbstractVariable): LinearExpression = {
     val multiplier = expr1.terms(variable)
     val revisedTerms1 = expr1.terms - variable
     val revisedConstant = multiplier * expr2.constant
@@ -69,14 +67,14 @@ class Tableau(
       if (dOldCoeff.isDefined) {
         val oldCoeff = dOldCoeff.get
         val newCoeff = oldCoeff + multiplier * coeff
-        if (isApproxZero(newCoeff)) {
+        if (Math.abs(newCoeff) < AbstractVariable.epsilon) {
           noteRemovedVariable(clv, subject)
           termsToRemove += clv
         } else {
           termsToRevise += (clv -> newCoeff)
         }
       } else { // did not have that variable already
-         termsToRevise += (clv -> multiplier * coeff)
+        termsToRevise += (clv -> multiplier * coeff)
         noteAddedVariable(clv, subject)
       }
     }
@@ -84,12 +82,13 @@ class Tableau(
     LinearExpression(revisedTerms, revisedConstant)
   }
 
-  protected def substitueOut(oldVar: AbstractVariable, expr: LinearExpression) = {
+  protected def substituteOut(oldVar: AbstractVariable, expr: LinearExpression): Unit = {
     val varset = columns(oldVar)
     varset foreach { v =>
       val row = rows(v)
       val revisedRow = substituteOut(row, oldVar, expr, v)
-      if (v.isRestricted && row.constant < 0.0) {
+      rows(v) = revisedRow
+      if (v.isRestricted && revisedRow.constant < 0.0) {
         this.infeasibleRows += v
       }
     }
