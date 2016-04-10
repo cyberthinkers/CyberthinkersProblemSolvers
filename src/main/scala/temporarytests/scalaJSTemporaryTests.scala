@@ -53,7 +53,7 @@ object ScalaJSExample {
     //    println("m = " + m);
     //    println("k = " + k);
     //    println("v = " + v);
-    val m: Map[AbstractMutableVariable, Set[AbstractMutableVariable]] =
+    val m: Map[AbstractVariable, Set[AbstractVariable]] =
       Map(Variable(1, 1) -> Set(Variable(2, 3)),
           Variable(2, 3) -> Set(Variable(4, 5)))
     println("m = " + m)

@@ -17,6 +17,8 @@ case class LinearExpression(val terms: Map[AbstractVariable, Double], val consta
   def this() = this(0);
 
   def this(v: AbstractVariable, value: Double = 1) = this(Map(v -> value), 0)
+  
+  def this(v: AbstractVariable, value: Double, constant: Double) = this(Map(v -> value), constant)
 
   def isConstant: Boolean = terms.size == 0
 
@@ -27,9 +29,9 @@ case class LinearExpression(val terms: Map[AbstractVariable, Double], val consta
     else require(!(this isConstant), "Can't allow nonlinear expressions"); expression * this.constant
   }
 
-  def +(variable: Variable): LinearExpression = addExpression(new LinearExpression(variable))
+  def +(variable: AbstractVariable): LinearExpression = addExpression(new LinearExpression(variable))
 
-  def -(variable: Variable): LinearExpression = addExpression(new LinearExpression(variable), -1)
+  def -(variable: AbstractVariable): LinearExpression = addExpression(new LinearExpression(variable), -1)
   
   def /(d: Double): LinearExpression = this * (1.0 / d) //FIXME removed / 0 test
   

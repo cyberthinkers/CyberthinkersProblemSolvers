@@ -99,4 +99,20 @@ class Tableau(
     columns -= oldVar
   }
 
+  /**
+   * Try to add linearExpression directly to the tableax without creating
+   * an artificial variable.
+   */
+  protected def tryAddingDirectly(expr: LinearExpression): Boolean = {
+    true // FIXME
+  }
+  
+    /**
+   * Try to add linearExpression directly to the tableax without creating
+   * an artificial variable.
+   */
+  protected def addWithArtificialVariable(expr: LinearExpression): Boolean = {
+    true // FIXME
+  }
+
 }
