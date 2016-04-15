@@ -46,7 +46,25 @@ case class LinearExpression(val terms: Map[AbstractVariable, Double], val consta
     LinearExpression(newTerms, constant);
   }
 
-  //FIXME- Missing addExpression with Tableau solver - rework addExpression in Tableau
+  def addVariable(v: AbstractVariable, c: Double):LinearExpression = {
+    val coeff = terms.get(v)
+      if(coeff.isDefined) {
+        val newCoefficient = coeff.get + c
+        if(isApproxZero(newCoefficient)) {
+          LinearExpression(terms - v, this.constant)
+        } else {
+          LinearExpression(terms + (v -> newCoefficient), this.constant)
+        }
+      } else {
+          if(!isApproxZero(c)) {
+             LinearExpression(terms + (v -> c), this.constant)
+          } else {
+            this
+          }
+      } 
+  }
+  
+  def setVariable(v: AbstractVariable, c: Double):LinearExpression = LinearExpression(terms + (v -> c), this.constant)
   
   def addExpression(expression: LinearExpression, n: Double = 1): LinearExpression = {
     val v1 =
