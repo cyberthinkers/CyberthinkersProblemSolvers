@@ -7,13 +7,13 @@ class SimplexSolver(
     val stayMinusErrorVars: mutable.ArrayBuffer[SlackVariable],
     val stayPlusErrorVars: mutable.Buffer[SlackVariable],
     val errorVars: mutable.HashMap[Constraint, mutable.Set[Any]],
-    val markerVars: mutable.HashMap[Constraint, mutable.Set[Variable]],
+    val markerVars: mutable.HashMap[Constraint, AbstractVariable],
     val resolvePair: mutable.Buffer[Double],
     val editVarMap: mutable.HashMap[Variable, EditInfo],
-    val VariableFactory: VariableFactory,
+    val variableFactory: VariableFactory,
+    val objective: ObjectiveVariable,
     // FIXME: rework this stuff...
     var needsSolving: Boolean,
-    var objective: ObjectiveVariable,
     var optimizeAutomatically: Boolean) {
   
   
@@ -41,20 +41,28 @@ class SimplexSolver(
    // returns :(Vector[SlackVariable], Double)
   protected def newExpression(cn: Constraint) = {
     val cnExpr = cn.expression
-    val expr = new LinearExpression(cnExpr.constant)
+    var expr = new LinearExpression(cnExpr.constant) //<< fixme: rework to val instead of var
     cnExpr.terms.keys foreach { v =>
       val c = cnExpr.terms(v)
       val e = this.tableau.rows.get(v)
-      val revisedExpr = if(!e.isDefined) {
-        expr.addVariable(v, c) 
+      if(!e.isDefined) {
+        expr = expr.addVariable(v, c) 
       } else {
-        expr.addExpression(e.get, c)
+        expr = expr.addExpression(e.get, c)
       }
     }
     if(cn.isInstanceOf[LinearInequality]) {
-      val slackVar = VariableFactory.newSlackVariable()
-      expr.addVariable(slackVar, -1)
-      
+      val slackVar = variableFactory.newSlackVariable()
+      expr = expr.setVariable(slackVar, -1)
+      markerVars.put(cn, slackVar)
+      if(cn.isRequired) {
+        val eminus = variableFactory.newSlackVariable()
+        expr = expr.setVariable(eminus, 1)
+        val zRow = tableau.rows(objective)
+        val sw = cn.strength.symbolicWeight * cn.weight
+        zRow.setVariable(eminus, sw)
+        
+      }
     }
   }
   
