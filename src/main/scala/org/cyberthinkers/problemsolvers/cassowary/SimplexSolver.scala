@@ -6,7 +6,7 @@ class SimplexSolver(
     val tableau: Tableau,
     val stayMinusErrorVars: mutable.ArrayBuffer[SlackVariable],
     val stayPlusErrorVars: mutable.Buffer[SlackVariable],
-    val errorVars: mutable.HashMap[Constraint, mutable.Set[Any]],
+    val errorVars: mutable.HashMap[Constraint, mutable.HashSet[AbstractVariable]],
     val markerVars: mutable.HashMap[Constraint, AbstractVariable],
     val resolvePair: mutable.Buffer[Double],
     val editVarMap: mutable.HashMap[Variable, EditInfo],
@@ -15,8 +15,7 @@ class SimplexSolver(
     // FIXME: rework this stuff...
     var needsSolving: Boolean,
     var optimizeAutomatically: Boolean) {
-  
-  
+ 
   
   /** Convenience function for creating linear inequality constraint with a lower bound */
   def addLoweverBound(v: AbstractVariable, lower: Double) = {
@@ -39,7 +38,7 @@ class SimplexSolver(
     
   }
    // returns :(Vector[SlackVariable], Double)
-  protected def newExpression(cn: Constraint) = {
+  protected def newExpression(cn: Constraint) = { // fixme: this function needs to be folded into Tableau
     val cnExpr = cn.expression
     var expr = new LinearExpression(cnExpr.constant) //<< fixme: rework to val instead of var
     cnExpr.terms.keys foreach { v =>
@@ -55,15 +54,21 @@ class SimplexSolver(
       val slackVar = variableFactory.newSlackVariable()
       expr = expr.setVariable(slackVar, -1)
       markerVars.put(cn, slackVar)
-      if(cn.isRequired) {
+      if(!cn.isRequired) {
         val eminus = variableFactory.newSlackVariable()
         expr = expr.setVariable(eminus, 1)
         val zRow = tableau.rows(objective)
         val sw = cn.strength.symbolicWeight * cn.weight
         zRow.setVariable(eminus, sw)
-        
+        insertErrorVar(cn, eminus)
+        this.tableau.noteAddedVariable(eminus, objective);
       }
     }
   }
   
+  protected def insertErrorVar(cn: Constraint, v: AbstractVariable) = {
+    val cnset = errorVars.get(cn)
+    val cnset2 = (if(cnset.isDefined) cnset.get else new mutable.HashSet[AbstractVariable]) + v
+    errorVars.put(cn, cnset2)
+  }
 }

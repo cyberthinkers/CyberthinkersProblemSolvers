@@ -14,7 +14,7 @@ class Tableau(
     columns(v).remove(subject)
   }
 
-  protected def noteAddedVariable(variable: AbstractVariable, subject: AbstractVariable): Unit = {
+   def noteAddedVariable(variable: AbstractVariable, subject: AbstractVariable): Unit = {
     columns += (variable -> (columns.getOrElse(variable, mutable.Set.empty) + subject))
   }
 
