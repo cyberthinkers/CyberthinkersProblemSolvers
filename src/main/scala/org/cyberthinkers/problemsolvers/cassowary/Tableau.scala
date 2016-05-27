@@ -9,7 +9,7 @@ class Tableau(
     val externalRows: mutable.Set[AbstractVariable] = mutable.Set.empty,
     val externalParametricVars: mutable.Set[AbstractVariable] = mutable.Set.empty) {
 
-  // check should be made that the subject is in the tableau
+  // FIXME: check should be made that the subject is in the tableau
   protected def noteRemovedVariable(v: AbstractVariable, subject: AbstractVariable): Unit = {
     columns(v).remove(subject)
   }
@@ -53,7 +53,22 @@ class Tableau(
     rows.remove(variable)
   }
 
-  private[this] def substituteOut(
+  /**
+   * Replace all occurrences of oldVar with expr, and update column cross
+   * indices, oldVar should now be a basic variable
+   */
+  protected def substitueOut(oldVar: AbstractVariable, expr: LinearExpression) = {
+    columns(oldVar) foreach { v =>
+      val row = rows(v)
+      val revisedRow = substituteOut(row, oldVar, expr, v)
+      rows(v) = revisedRow
+      if(v.isRestricted && row.constant < 0.0) {
+        infeasibleRows += v
+      }
+    }
+  }
+  
+  private[this] def substituteOut( // Note: removed from LinearExpression to this class
     expr1: LinearExpression, variable: AbstractVariable,
     expr2: LinearExpression, subject: AbstractVariable): LinearExpression = {
     val multiplier = expr1.terms(variable)

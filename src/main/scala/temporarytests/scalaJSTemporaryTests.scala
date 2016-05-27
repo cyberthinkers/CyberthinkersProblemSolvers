@@ -53,16 +53,19 @@ object ScalaJSExample {
     //    println("m = " + m);
     //    println("k = " + k);
     //    println("v = " + v);
-    val m: Map[AbstractVariable, Set[AbstractVariable]] =
-      Map(Variable(1, 1) -> Set(Variable(2, 3)),
-          Variable(2, 3) -> Set(Variable(4, 5)))
-    println("m = " + m)
-    val v = Variable(2, 3)
-    val s = Set(v)
-//    val t = new Tableau(m)
-//    val varset = t.columns.get(Variable(1, 1)).get
-//    println("varset = " + varset)
-//    val c = varset collect t.columns
-//    println("c = " + c)
+    //    val m: Map[AbstractVariable, Set[AbstractVariable]] =
+    //      Map(Variable(1, 1) -> Set(Variable(2, 3)),
+    //          Variable(2, 3) -> Set(Variable(4, 5)))
+    //    println("m = " + m)
+    //    val v = Variable(2, 3)
+    //    val s = Set(v)
+
+
+
+    //    val t = new Tableau(m)
+    //    val varset = t.columns.get(Variable(1, 1)).get
+    //    println("varset = " + varset)
+    //    val c = varset collect t.columns
+    //    println("c = " + c)
   }
 }

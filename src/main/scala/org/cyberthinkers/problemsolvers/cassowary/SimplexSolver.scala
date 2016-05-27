@@ -34,9 +34,66 @@ class SimplexSolver(
 
   /** Add constraint to solver */
   def addConstraint(cn: Constraint) = {
-
+    val (expr, eplus_eminus, prevEConstant) = newExpression(cn)
+    
   }
-  // returns :(mutable.Buffer[SlackVariable], Double) // not sure if Buffer will work, was Vector in Java
+  
+  protected def add(expr: LinearExpression) = {
+    val (subject, exprRevised) = chooseSubject(expr)
+    if(subject.isDefined) { // if(we added directly)
+      
+    } else { // else, try indirectly
+      
+    }
+  }
+  
+  protected def chooseSubject(expr: LinearExpression): (Option[AbstractVariable], LinearExpression) = {
+    // FIXME: this function should be split apart and expr handled differently
+    var foundUnrestricted = false
+    var foundNewRestricted = false
+    var subject: Option[AbstractVariable] = Option.empty
+    var continueSearch = true
+    for (v <- expr.terms.keys; c = expr.terms(v) if (continueSearch)) {
+      if (foundUnrestricted) {
+        if (!v.isRestricted) {
+          if (!this.tableau.columns.contains(v)) {
+            subject = Some(v)
+            continueSearch = false
+          }
+        }
+      } else { // we haven't found a restricted variable yet
+        if (v.isRestricted) {
+          if (!foundNewRestricted && !v.isDummy && c < 0.0) {
+            val col = this.tableau.columns.get(v)
+            if (!col.isDefined || (col.get.size == 1 && this.tableau.columns.contains(this.objective))) {
+              subject = Some(v)
+              foundNewRestricted = true
+            }
+          }
+        } else {
+          subject = Some(v)
+          foundUnrestricted = true
+        }
+      }
+    }
+    if (!subject.isDefined) {
+      var coeff = 0.0
+      val noneDummy = expr.terms.keys.find { v => !v.isDummy }
+      if (noneDummy.isEmpty) {
+        for (v <- expr.terms.keys; c = expr.terms(v)) {
+          if (!this.tableau.columns.contains(v)) {
+            subject = Some(v)
+            coeff = c
+          }
+        }
+      }
+      require(!LinearExpression.isApproxZero(expr.constant), "ExCLRequiredFailure")
+      (subject, if (coeff > 0.0) expr * -1 else expr)
+    } else {
+      (subject, expr)
+    }
+  }
+
   protected def newExpression(cn: Constraint) = { // fixme: this function needs to be folded into Tableau
     val eplus_eminus: mutable.Buffer[SlackVariable] = mutable.Buffer.empty
     val cnExpr = cn.expression
@@ -60,7 +117,7 @@ class SimplexSolver(
         expr = expr.setVariable(eminus, 1.0)
         val zRow = this.tableau.rows(objective)
         val sw = cn.strength.symbolicWeight * cn.weight
-        tableau.rows += objective -> zRow.setVariable(eminus, sw) 
+        this.tableau.rows += objective -> zRow.setVariable(eminus, sw)
         insertErrorVar(cn, eminus)
         this.tableau.noteAddedVariable(eminus, objective);
       }
@@ -77,24 +134,24 @@ class SimplexSolver(
         markerVars.put(cn, eplus)
         val zRow = tableau.rows(objective)
         val sw = cn.strength.symbolicWeight * cn.weight
-        tableau.rows += objective -> zRow.setVariable(eplus, sw)
+        this.tableau.rows += objective -> zRow.setVariable(eplus, sw)
         this.tableau.noteAddedVariable(eplus, objective);
-        tableau.rows += objective -> zRow.setVariable(eminus, sw)
+        this.tableau.rows += objective -> zRow.setVariable(eminus, sw)
         this.tableau.noteAddedVariable(eminus, objective);
         insertErrorVar(cn, eminus)
         insertErrorVar(cn, eplus)
-        if(cn.isInstanceOf[StayConstraint]) {
+        if (cn.isInstanceOf[StayConstraint]) {
           stayPlusErrorVars += eplus
           stayMinusErrorVars += eminus
-        } else if(cn.isInstanceOf[EditConstraint]) {
+        } else if (cn.isInstanceOf[EditConstraint]) {
           eplus_eminus += eplus
           eplus_eminus += eminus
           prevEConstant = cnExpr.constant
         }
       }
     }
-    expr = if(expr.constant < 0) expr * -1 else expr
-    (eplus_eminus, prevEConstant)
+    expr = if (expr.constant < 0) expr * -1 else expr
+    (expr, eplus_eminus, prevEConstant)
   }
 
   protected def insertErrorVar(cn: Constraint, v: AbstractVariable) = {

@@ -82,11 +82,19 @@ case class LinearExpression(val terms: Map[AbstractVariable, Double], val consta
 
   def anyPivotableVariable = terms.find(p => p._1 isPivotable)
   
-  def changeSubject(oldSubject: AbstractVariable,  newSubject: AbstractVariable) = {
+  def changeSubject(oldSubject: AbstractVariable,  newSubject: AbstractVariable): LinearExpression = {
     val coeff = terms(newSubject)
     val revisedExpr = LinearExpression(terms - newSubject, constant)
     val reciprocal = 1.0 / coeff
     val revisedLinearExpression = revisedExpr * -reciprocal
     LinearExpression(revisedLinearExpression.terms + (oldSubject -> reciprocal), revisedLinearExpression.constant)
   }
+  
+  def newSubject(subject: AbstractVariable): (LinearExpression, Double) = {
+    val coeff = terms(subject)
+    val reciprocal = 1.0 / coeff
+    (LinearExpression(terms - subject, constant) * -reciprocal, reciprocal)
+  }
+  
+  @inline def coefficientFor(v: AbstractVariable) = terms.getOrElse(v, 0.0)
 }
