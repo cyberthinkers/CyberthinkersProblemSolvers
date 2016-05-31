@@ -96,5 +96,5 @@ case class LinearExpression(val terms: Map[AbstractVariable, Double], val consta
     (LinearExpression(terms - subject, constant) * -reciprocal, reciprocal)
   }
   
-  @inline def coefficientFor(v: AbstractVariable) = terms.getOrElse(v, 0.0)
+  def coefficientFor(v: AbstractVariable) = terms.getOrElse(v, 0.0)
 }

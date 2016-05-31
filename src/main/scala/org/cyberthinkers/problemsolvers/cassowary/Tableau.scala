@@ -14,8 +14,8 @@ class Tableau(
     columns(v).remove(subject)
   }
 
-   def noteAddedVariable(variable: AbstractVariable, subject: AbstractVariable): Unit = {
-    columns += (variable -> (columns.getOrElse(variable, mutable.Set.empty) + subject))
+  def noteAddedVariable(v: AbstractVariable, subject: AbstractVariable): Unit = {
+    columns += (v -> (columns.getOrElse(v, mutable.Set.empty) + subject))
   }
 
   private def insertColumns(terms: scala.collection.Set[AbstractVariable], rowVariable: AbstractVariable): Unit = {
@@ -26,48 +26,52 @@ class Tableau(
     }
   }
 
-  protected def addRow(variable: AbstractVariable, expr: LinearExpression): Unit = {
-    rows += (variable -> expr)
-    insertColumns(expr.terms.keySet, variable)
-    if (variable.isExternal) externalRows += variable
+  def addRow(v: AbstractVariable, expr: LinearExpression): Unit = {
+    rows += (v -> expr)
+    insertColumns(expr.terms.keySet, v)
+    if (v.isExternal) externalRows += v
   }
 
-  protected def removeColumn(variable: AbstractVariable): Unit = {
-    columns -= variable
-    if (variable.isExternal) {
-      externalRows -= variable
-      externalParametricVars -= variable
+  protected def removeColumn(v: AbstractVariable): Unit = {
+    columns -= v
+    if (v.isExternal) {
+      externalRows -= v
+      externalParametricVars -= v
     }
   }
 
-  protected def removeRow(variable: AbstractVariable): Unit = {
-    val expr = rows(variable)
+  /** Remove the basic variable v from the tableau row v=expr, then update column cross indices */
+  def removeRow(v: AbstractVariable): LinearExpression = {
+    val expr = rows(v)
     expr.terms.keys foreach { v =>
       val varset = columns.get(v)
-      if (varset.isDefined) varset.get.remove(v)
+      if (varset.isDefined) varset.get -= v
     }
-    if (variable.isExternal) externalRows -= variable
-    rows.remove(variable)
-    infeasibleRows -= variable
-    if (variable.isExternal) externalRows.remove(variable)
-    rows.remove(variable)
+    infeasibleRows -= v
+    if (v.isExternal) externalRows -= v
+    rows -= v
+    expr
   }
 
   /**
    * Replace all occurrences of oldVar with expr, and update column cross
    * indices, oldVar should now be a basic variable
    */
-  protected def substitueOut(oldVar: AbstractVariable, expr: LinearExpression) = {
+  def substitueOut(oldVar: AbstractVariable, expr: LinearExpression): Unit = {
     columns(oldVar) foreach { v =>
       val row = rows(v)
       val revisedRow = substituteOut(row, oldVar, expr, v)
       rows(v) = revisedRow
-      if(v.isRestricted && row.constant < 0.0) {
+      if (v.isRestricted && row.constant < 0.0) {
         infeasibleRows += v
       }
     }
+    if (oldVar.isExternal) {
+      externalRows += oldVar
+      externalParametricVars -= oldVar
+    }
   }
-  
+
   private[this] def substituteOut( // Note: removed from LinearExpression to this class
     expr1: LinearExpression, variable: AbstractVariable,
     expr2: LinearExpression, subject: AbstractVariable): LinearExpression = {
@@ -113,21 +117,4 @@ class Tableau(
     }
     columns -= oldVar
   }
-
-  /**
-   * Try to add linearExpression directly to the tableax without creating
-   * an artificial variable.
-   */
-  protected def tryAddingDirectly(expr: LinearExpression): Boolean = {
-    true // FIXME
-  }
-  
-    /**
-   * Try to add linearExpression directly to the tableax without creating
-   * an artificial variable.
-   */
-  protected def addWithArtificialVariable(expr: LinearExpression): Boolean = {
-    true // FIXME
-  }
-
 }

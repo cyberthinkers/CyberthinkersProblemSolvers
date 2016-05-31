@@ -12,7 +12,7 @@ class SimplexSolver(
     val editVarMap: mutable.HashMap[Variable, EditInfo],
     val variableFactory: VariableFactory,
     val objective: ObjectiveVariable,
-    // FIXME: rework this stuff...
+    // FIXME: refactor this stuff...
     var needsSolving: Boolean,
     var optimizeAutomatically: Boolean) {
 
@@ -34,19 +34,29 @@ class SimplexSolver(
 
   /** Add constraint to solver */
   def addConstraint(cn: Constraint) = {
-    val (expr, eplus_eminus, prevEConstant) = newExpression(cn)
-    
-  }
-  
-  protected def add(expr: LinearExpression) = {
-    val (subject, exprRevised) = chooseSubject(expr)
-    if(subject.isDefined) { // if(we added directly)
-      
-    } else { // else, try indirectly
-      
+    val (expr1, eplus_eminus, prevEConstant) = newExpression(cn)
+    // try adding directly without creating an artificial variable
+    val (subject, expr2) = chooseSubject(expr1)
+    if (subject.isDefined) { // if (we can add directly)
+      tableau.substitueOut(subject.get, expr2)
+      tableau.rows += subject.get -> expr2
+    } else { // try adding indirectly with an artificial variable
+      val av = variableFactory.newSlackVariable()
+      val az = variableFactory.newObjectiveVariable()
+      tableau.rows += av -> expr1
+      tableau.rows += az -> expr1
+    }
+    needsSolving = true
+    if (cn.isInstanceOf[EditConstraint]) {
+      val i = editVarMap.size
+      val cnEdit: EditConstraint = cn.asInstanceOf[EditConstraint]
+      val clvEplus = eplus_eminus(0)
+      val clvEminus = eplus_eminus(1)
+      val e = EditInfo(cnEdit, clvEplus, clvEminus, prevEConstant, i)
+      this.editVarMap += cnEdit.variable -> e
     }
   }
-  
+
   protected def chooseSubject(expr: LinearExpression): (Option[AbstractVariable], LinearExpression) = {
     // FIXME: this function should be split apart and expr handled differently
     var foundUnrestricted = false
@@ -152,6 +162,53 @@ class SimplexSolver(
     }
     expr = if (expr.constant < 0) expr * -1 else expr
     (expr, eplus_eminus, prevEConstant)
+  }
+
+  /** Minimize the value of the objective. (The tableau should already be feasible.) */
+  protected def optimize(zVar: ObjectiveVariable) = {
+    val zRow = tableau.rows(zVar)
+    var objectiveCoeff = 0.0
+    var entryVar: Option[AbstractVariable] = None
+    var exitVar: Option[AbstractVariable] = None
+    def findNextEntryVar = {
+      val terms = zRow.terms
+      terms.keys foreach { v =>
+        val c = terms(v)
+        if (v.isPivotable && c < objectiveCoeff) {
+          objectiveCoeff = c
+          entryVar = Some(v)
+        }
+      }
+      objectiveCoeff >= -AbstractVariable.epsilon || entryVar.isEmpty
+    }
+    while (findNextEntryVar) {
+      var minRatio = Double.MaxValue
+      val columnVars = this.tableau.columns(entryVar.get)
+      var r = 0.0
+      columnVars foreach { v =>
+        if (v.isPivotable) {
+          val expr = this.tableau.rows(v)
+          val coeff = expr.coefficientFor(v)
+          if (coeff < 0.0) {
+            r = -expr.constant / coeff
+            if (r < minRatio) {
+              minRatio = r
+              exitVar = Some(v)
+            }
+          }
+        }
+      }
+      require(minRatio != Double.MaxValue, "Objective function is unbounded in optimize")
+      require(entryVar.isDefined && exitVar.isDefined)
+      pivot(entryVar.get, exitVar.get)
+    }
+  }
+
+  //FIXME-move to Tableau.scala
+  protected def pivot(entryVar: AbstractVariable, exitVar: AbstractVariable) = {
+    val pexpr = tableau.removeRow(exitVar)
+    val pexpr2 = pexpr.changeSubject(exitVar, entryVar)
+    tableau.addRow(entryVar, pexpr2)
   }
 
   protected def insertErrorVar(cn: Constraint, v: AbstractVariable) = {
