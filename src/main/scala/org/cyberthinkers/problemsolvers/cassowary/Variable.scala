@@ -27,8 +27,7 @@ case class ObjectiveVariable(val id: Int) extends AbstractVariable
 
 case class SlackVariable(val id: Int) extends AbstractVariable
 
-// fixme - try to rework value to a val instead of var
-case class Variable(var value: Double, val id: Int) extends AbstractVariable {
+case class Variable(val value: Double, val id: Int) extends AbstractVariable {
   final def approxEqual(thatValue: Variable) = Math.abs(this.value - thatValue.value) < AbstractVariable.epsilon
   final def isApproxZero: Boolean = Math.abs(this.value) < AbstractVariable.epsilon
 }
