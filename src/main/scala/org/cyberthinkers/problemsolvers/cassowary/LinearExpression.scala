@@ -9,7 +9,7 @@ object LinearExpression {
   @inline def isApproxZero(a: Double) = Math.abs(a) < AbstractVariable.epsilon
 }
 
-case class LinearExpression(val terms: Map[AbstractVariable, Double], val constant: Double) {
+final case class LinearExpression(val terms: Map[AbstractVariable, Double], val constant: Double) {
   import  org.cyberthinkers.problemsolvers.cassowary.LinearExpression._
 
   def this(constant: Double) = this(new HashMap[AbstractVariable, Double], constant)

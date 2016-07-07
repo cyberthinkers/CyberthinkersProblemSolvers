@@ -1,6 +1,6 @@
 package org.cyberthinkers.problemsolvers.cassowary
 
-case class Strength(symbolicWeight: Double) extends AnyVal {
+final case class Strength(symbolicWeight: Double) extends AnyVal {
   
 }
 

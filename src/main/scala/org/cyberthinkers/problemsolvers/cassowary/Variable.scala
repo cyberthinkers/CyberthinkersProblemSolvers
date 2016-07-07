@@ -21,13 +21,13 @@ abstract class AbstractVariable extends Ordered[AbstractVariable] with Equals {
   override def hashCode = id.hashCode()
 }
 
-case class DummyVariable(val id: Int) extends AbstractVariable
+final case class DummyVariable(val id: Int) extends AbstractVariable
 
-case class ObjectiveVariable(val id: Int) extends AbstractVariable
+final case class ObjectiveVariable(val id: Int) extends AbstractVariable
 
-case class SlackVariable(val id: Int) extends AbstractVariable
+final case class SlackVariable(val id: Int) extends AbstractVariable
 
-case class Variable(val value: Double, val id: Int) extends AbstractVariable {
+final case class Variable(val value: Double, val id: Int) extends AbstractVariable {
   final def approxEqual(thatValue: Variable) = Math.abs(this.value - thatValue.value) < AbstractVariable.epsilon
   final def isApproxZero: Boolean = Math.abs(this.value) < AbstractVariable.epsilon
 }

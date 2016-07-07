@@ -11,21 +11,21 @@ abstract class EditOrStayConstraint(
   variable: AbstractVariable, strength: Strength, weight: Double, val expression: LinearExpression) extends Constraint {
 }
 
-case class EditConstraint(
+final case class EditConstraint(
   val variable: Variable, val strength: Strength = Strength.required, val weight: Double = 1)
   extends EditOrStayConstraint(variable, strength, weight, new LinearExpression(variable, -1, variable.value)) {
 }
 
-case class StayConstraint(
+final case class StayConstraint(
   val variable: Variable, val strength: Strength = Strength.required, val weight: Double = 1) 
   extends EditOrStayConstraint(variable, strength, weight, new LinearExpression(variable, -1, variable.value)) {
 }
 
-case class LinearConstraint(
+final case class LinearConstraint(
   val expression: LinearExpression, val strength: Strength = Strength.required, val weight: Double = 1) extends Constraint {
 }
 
-case class LinearInequality(
+final case class LinearInequality(
   val expression: LinearExpression, val strength: Strength = Strength.required, val weight: Double = 1) extends Constraint {
 }
 
